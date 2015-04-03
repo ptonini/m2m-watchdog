@@ -15,16 +15,28 @@ class Services():
         self.port = port
         self.is_java = is_java
         self.thresh = thresh
-        self.get_pid(self, pidfile)
+        self.__get_pid(pidfile)
+        self.__validate_port(port)
 
-    def get_pid(self, pidfile):
-        if os.path.isfile(self.pidfile):
-            with open(self.pidfile, "r") as f:
+    def __get_pid(self, pidfile):
+        if os.path.isfile(pidfile):
+            with open(pidfile, "r") as f:
                 self.pid = int(f.read())
         else:
             print 'Error: Invalid pidfile for ' + self.name
+            sys.exit(1)
         if not isinstance(self.pid, (int, long)):
             print 'Error: Invalid PID for ' + self.name
+            sys.exit(1)
+
+    def __validate_port(self, port):
+        if port == None:
+            self.port = None
+        elif 0 < int(port) < 65536:
+            self.port = port
+        else:
+            print 'Error: Invalid port for ' + self.name
+            sys.exit(1)
 
     def is_not_running(self):
         try:
@@ -43,15 +55,13 @@ class Services():
             return True
 
     def is_leaking(self):
-        pass
+        if self.is_java:
+            pass
+        else:
+            return False
 
     def start(self):
 
         pass
 
 
-def tcp_port(integer):
-    if not 0 < int(integer) < 65536:
-        msg = 'invalid port: ' + str(integer)
-        return 0
-    return int(integer)
