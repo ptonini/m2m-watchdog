@@ -11,23 +11,17 @@ class Services():
 
     def __init__(self, name, pidfile, script, port, is_java, thresh):
         self.name = name
-        self.script = script
-        self.port = port
         self.is_java = is_java
         self.thresh = thresh
-        self.__get_pid(pidfile)
+        self.pidfile = pidfile
         self.__validate_port(port)
+        self.__validate_script(script)
 
-    def __get_pid(self, pidfile):
-        if os.path.isfile(pidfile):
-            with open(pidfile, "r") as f:
-                self.pid = int(f.read())
+    def __validate_script(self, script):
+        if os.path.isfile(script):
+            self.script = script
         else:
-            print 'Error: Invalid pidfile for ' + self.name
-            sys.exit(1)
-        if not isinstance(self.pid, (int, long)):
-            print 'Error: Invalid PID for ' + self.name
-            sys.exit(1)
+            print 'Error: Invalid init script for', self.name
 
     def __validate_port(self, port):
         if port == None:
@@ -39,20 +33,28 @@ class Services():
             sys.exit(1)
 
     def is_not_running(self):
-        try:
-            psutil.pid_exists(self.pid)
-            return False
-        except:
+        if os.path.isfile(self.pidfile):
+            with open(self.pidfile, "r") as f:
+                self.pid = int(f.read())
+            try:
+                psutil.pid_exists(self.pid)
+                return False
+            except:
+                return True
+        else:
             return True
 
     def is_not_responding(self):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect(('localhost', self.port))
-            s.close()
+        if self.port != None:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.connect(('localhost', self.port))
+                s.close()
+                return False
+            except:
+                return True
+        else:
             return False
-        except:
-            return True
 
     def is_leaking(self):
         if self.is_java:
@@ -60,8 +62,16 @@ class Services():
         else:
             return False
 
-    def start(self):
+    def daemon(self, option):
+        print subprocess.call([self.script, option])
 
-        pass
 
+service = Services('MySQL', '/var/run/mysqld/mysqld.pid','/etc/init.d/mysql', 3306, False, None)
 
+print service.name
+print service.pidfile
+if service.is_not_running():
+    print 'Service', service.name, 'is not running'
+else:
+    print 'Service', service.name, 'is running'
+#service.daemon('start')
