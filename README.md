@@ -1,1 +1,1 @@
-# Stratus 
+# m2m-watchdog
