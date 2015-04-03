@@ -84,22 +84,32 @@ def run(service_list, verbose):
         service = Services(name, pidfile, script, port, is_java, thresh)
         if service.is_not_running():
             print 'Service', service.name, 'is not running'
+            service.daemon('start')
+        else:
+            if verbose:
+                print 'Service', service.name, 'is running'
 
         if service.is_not_responding():
             print 'Service', service.name, 'is not responding'
+            service.daemon('restart')
+        else:
+            if verbose and service.port is not None:
+                print 'Service', service.name, 'is responding'
 
         if service.is_leaking():
             print 'Service', service.name, 'is leaking memory'
+            service.daemon('restart')
+        else:
+            if verbose and service.is_java:
+                print 'Service', service.name, 'not leaking memory'
 
 
 
-
-
-service_list = [['MySQL', '/var/run/mysqld/mysqld.pid','/etc/init.d/mysql', 3306, False, None]]
+service_list = [['M2M Adapter', '/var/run/m2m-adapter.pid','/etc/init.d/m2m-adapter', None, True, '90:99']]
 
 
 
-if len(sys.argv) == 0:
+if len(sys.argv) == 1:
     run(service_list, False)
 else:
     if sys.argv[1] == '-v':
