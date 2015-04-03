@@ -11,11 +11,11 @@ class Services():
 
     def __init__(self, name, pidfile, script, port, is_java, thresh):
         self.name = name
+        self.pidfile = pidfile
+        self.__validate_script(script)
+        self.__validate_port(port)
         self.is_java = is_java
         self.thresh = thresh
-        self.pidfile = pidfile
-        self.__validate_port(port)
-        self.__validate_script(script)
 
     def __validate_script(self, script):
         if os.path.isfile(script):
@@ -58,7 +58,7 @@ class Services():
 
     def is_leaking(self):
         if self.is_java:
-            pass
+            return False
         else:
             return False
 
@@ -66,12 +66,41 @@ class Services():
         print subprocess.call([self.script, option])
 
 
-service = Services('MySQL', '/var/run/mysqld/mysqld.pid','/etc/init.d/mysql', 3306, False, None)
+class Cronjob():
 
-print service.name
-print service.pidfile
-if service.is_not_running():
-    print 'Service', service.name, 'is not running'
+    def __init__(self, filename, interval):
+        self.filename = filename
+        self.interval = interval
+
+    def set(self):
+        pass
+
+    def delete(self):
+        pass
+
+
+def run(service_list, verbose):
+    for name, pidfile, script, port, is_java, thresh in service_list:
+        service = Services(name, pidfile, script, port, is_java, thresh)
+        if service.is_not_running():
+            print 'Service', service.name, 'is not running'
+
+        if service.is_not_responding():
+            print 'Service', service.name, 'is not responding'
+
+        if service.is_leaking():
+            print 'Service', service.name, 'is leaking memory'
+
+
+
+
+
+service_list = [['MySQL', '/var/run/mysqld/mysqld.pid','/etc/init.d/mysql', 3306, False, None]]
+
+
+
+if len(sys.argv) == 0:
+    run(service_list, False)
 else:
-    print 'Service', service.name, 'is running'
-#service.daemon('start')
+    if sys.argv[1] == '-v':
+        run(service_list, True)
