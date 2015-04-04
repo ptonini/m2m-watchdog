@@ -79,20 +79,18 @@ class Service():
         if self.is_java:
             eden = list()
             old = list()
-            i = 0
-            while i < self.timeout:
+            for counter in range(self.timeout):
                 try:
                     output = subprocess.check_output(['/usr/bin/jstat', '-gcutil', str(self.pid)], stderr=PIPE)
-                    rex1 = re.compile('\s{2,}')
-                    rex2 = re.compile(',')
-                    result = rex1.sub(' ', output.split('\n')[1]).split(' ')
-                    eden.append(float(rex2.sub('.', result[3])))
-                    old.append(float(rex2.sub('.', result[4])))
+                    r1 = re.compile('\s{2,}')
+                    r2 = re.compile(',')
+                    result = r1.sub(' ', output.split('\n')[1]).split(' ')
+                    eden.append(float(r2.sub('.', result[3])))
+                    old.append(float(r2.sub('.', result[4])))
                 except:
                     print 'Error: could not attach to pid ' + str(self.pid) + ' (' + self.name + ')'
                     sys.exit(1)
                 time.sleep(1)
-                i += 1
 
             self.eden_avg = self.__calc_avg(eden)
             self.old_avg = self.__calc_avg(old)
@@ -146,11 +144,16 @@ def run(service_list, verbose):
             if verbose and service.is_java:
                 print 'Service', service.name, 'is not leaking memory (' + service.heap_usage + ')'
 
+def main():
 
-service_list = [['M2M Adapter', '/var/run/m2m-adapter.pid', '/etc/init.d/m2m-adapter', None, True]]
+    service_list = [['M2M Adapter', '/var/run/m2m-adapter.pid', '/etc/init.d/m2m-adapter', None, True]]
 
-if len(sys.argv) == 1:
-    run(service_list, False)
-else:
-    if sys.argv[1] == '-v':
-        run(service_list, True)
+    if len(sys.argv) == 1:
+        run(service_list, False)
+    else:
+        if sys.argv[1] == '-v':
+            run(service_list, True)
+
+
+if __name__ == '__main__':
+    main()
