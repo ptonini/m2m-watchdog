@@ -13,13 +13,16 @@ import psutil
 
 
 class Services():
-    def __init__(self, name, pidfile, script, port, is_java, thresh):
+
+    timeout = 5
+    thresh = 9
+
+    def __init__(self, name, pidfile, script, port, is_java):
         self.name = name
         self.pidfile = pidfile
         self.__validate_script(script)
         self.__validate_port(port)
         self.is_java = is_java
-        self.thresh = thresh
 
     def __validate_script(self, script):
         if os.path.isfile(script):
@@ -35,6 +38,12 @@ class Services():
         else:
             print 'Error: Invalid port for ' + self.name
             sys.exit(1)
+
+    def __check_usage(self, usage):
+        if usage <= float(self.thresh):
+            return 0
+        else:
+            return 1
 
     def __calc_avg(self, list):
         somatory = 0
@@ -66,12 +75,12 @@ class Services():
         else:
             return False
 
-    def is_leaking(self, verbose):
+    def is_leaking(self):
         if self.is_java:
             eden = list()
             old = list()
             i = 0
-            while i < 5:
+            while i < self.timeout:
                 try:
                     output = subprocess.check_output(['/usr/bin/jstat', '-gcutil', str(self.pid)], stderr=PIPE)
                     rex1 = re.compile('\s{2,}')
@@ -84,10 +93,15 @@ class Services():
                     sys.exit(1)
                 time.sleep(1)
                 i += 1
-            eden_avg = self.__calc_avg(eden)
-            old_avg = self.__calc_avg(old)
-            print eden_avg, old_avg
 
+            self.eden_avg = self.__calc_avg(eden)
+            self.old_avg = self.__calc_avg(old)
+            self.heap_usage = str(self.eden_avg) + ', ' + str(self.old_avg)
+
+            if self.__check_usage(self.eden_avg):
+                return True
+            if self.__check_usage(self.old_avg):
+                return True
             return False
         else:
             return False
@@ -109,8 +123,8 @@ class Cronjob():
 
 
 def run(service_list, verbose):
-    for name, pidfile, script, port, is_java, thresh in service_list:
-        service = Services(name, pidfile, script, port, is_java, thresh)
+    for name, pidfile, script, port, is_java in service_list:
+        service = Services(name, pidfile, script, port, is_java)
         if service.is_not_running():
             print 'Service', service.name, 'is not running'
             service.daemon('start')
@@ -125,15 +139,15 @@ def run(service_list, verbose):
             if verbose and service.port is not None:
                 print 'Service', service.name, 'is responding'
 
-        if service.is_leaking(verbose):
-            print 'Service', service.name, 'is leaking memory'
+        if service.is_leaking():
+            print 'Service', service.name, 'is leaking memory (' + service.heap_usage + ')'
             service.daemon('restart')
         else:
             if verbose and service.is_java:
-                print 'Service', service.name, 'is not leaking memory'
+                print 'Service', service.name, 'is not leaking memory (' + service.heap_usage + ')'
 
 
-service_list = [['M2M Adapter', '/var/run/m2m-adapter.pid', '/etc/init.d/m2m-adapter', None, True, '90:99']]
+service_list = [['M2M Adapter', '/var/run/m2m-adapter.pid', '/etc/init.d/m2m-adapter', None, True]]
 
 if len(sys.argv) == 1:
     run(service_list, False)
