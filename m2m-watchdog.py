@@ -12,7 +12,7 @@ import re
 import psutil
 
 
-class Services():
+class Service():
 
     timeout = 5
     thresh = 9
@@ -124,7 +124,7 @@ class Cronjob():
 
 def run(service_list, verbose):
     for name, pidfile, script, port, is_java in service_list:
-        service = Services(name, pidfile, script, port, is_java)
+        service = Service(name, pidfile, script, port, is_java)
         if service.is_not_running():
             print 'Service', service.name, 'is not running'
             service.daemon('start')
