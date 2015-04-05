@@ -112,24 +112,25 @@ class Cronjob():
 
     cronfile = '/tmp/cronfile.tmp'
     crontab = list()
+    is_set = False
     devnull = open(os.devnull, 'w')
+    interval = None
 
-    def __init__(self, filename, interval):
+    def __init__(self, filename):
         self.filename = filename
-        self.interval = interval
-
 
     def __get_crontab(self):
         try:
-            old_crontab = subprocess.check_output(['crontab', '-l'], stderr=self.devnull).split('\n')
+            cur_crontab =subprocess.check_output(['crontab', '-l'], stderr=self.devnull).split('\n')
         except:
             pass
         else:
-            for line in old_crontab:
+            for line in cur_crontab:
                 if not line.startswith('#') and line != '' and self.filename not in line:
                     self.crontab.append(line)
                 elif self.filename in line and self.interval == None:
-                    pass
+                    self.interval = line.split(' ')[0][2:]
+                    self.is_set = True
 
     def __write_crontab(self):
         file = open(self.cronfile, 'w')
@@ -145,17 +146,25 @@ class Cronjob():
                 print 'Error: could not alter crontab'
                 sys.exit(1)
 
-    def set(self):
+    def set(self, interval):
+        self.interval = interval
         self.__get_crontab()
         self.crontab.append('*/' +  self.interval + ' * * * * ' +  self.filename + ' | logger -t m2m-watchdog 2>&1')
         self.__write_crontab()
-        print 'The cronjob was set to every ' + str(self.interval) + ' minutes'
+        print 'The cronjob is set to every ' + str(self.interval) + ' minutes'
 
 
     def delete(self):
         self.__get_crontab()
         self.__write_crontab()
         print 'The cronjob was removed'
+
+    def is_on_crontab(self):
+        self.__get_crontab()
+        if self.is_set:
+            return True
+        else:
+            return False
 
 
 def run(service_list, verbose):
@@ -189,12 +198,21 @@ def main():
     else:
         if sys.argv[1] == '-v':
             run(service_list, True)
-        elif sys.argv[1] == '-s':
-            cronjob = Cronjob(sys.argv[0], sys.argv[2])
-            cronjob.set()
-        elif sys.argv[1] == '-d':
-            cronjob = Cronjob(sys.argv[0], None)
-            cronjob.delete()
+        else:
+            cronjob = Cronjob(sys.argv[0])
+            if sys.argv[1] == '-s':
+                cronjob.set(sys.argv[2])
+            elif sys.argv[1] == '-d':
+                cronjob.delete()
+            elif sys.argv[1] == '-i':
+                if cronjob.is_on_crontab():
+                    print 'The cronjob is set to every', cronjob.interval, 'minutes'
+                    for name, pidfile, script, port, is_java in service_list:
+                        print 'Monitoring service', name
+                else:
+                    print 'The cronjob is no set'
+
+
 
 
 
