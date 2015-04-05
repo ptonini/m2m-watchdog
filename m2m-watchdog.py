@@ -14,8 +14,8 @@ import psutil
 
 class Service():
 
-    timeout = 5
-    thresh = 9
+    timeout = 3
+    thresh = 99
 
     def __init__(self, name, pidfile, script, port, is_java):
         self.name = name
@@ -88,7 +88,7 @@ class Service():
                     eden.append(float(r2.sub('.', result[3])))
                     old.append(float(r2.sub('.', result[4])))
                 except:
-                    print 'Error: could not attach to pid ' + str(self.pid) + ' (' + self.name + ')'
+                    print 'Error: could not attach to ' + self.name
                     sys.exit(1)
                 time.sleep(1)
 
@@ -109,15 +109,51 @@ class Service():
 
 
 class Cronjob():
+
+    cronfile = '/tmp/cronfile.tmp'
+
     def __init__(self, filename, interval):
+
         self.filename = filename
         self.interval = interval
 
+    def __get_crontab(self):
+        try:
+            old_crontab = subprocess.check_output(['crontab', '-l'], stderr=PIPE).split('\n')
+            print old_crontab
+            new_crontab = list()
+            for line in old_crontab:
+                if not re.match('^#.*', line) and line != '' and self.filename not in line:
+                    new_crontab.append(line)
+            self.crontab = new_crontab
+        except:
+            self.crontab = list()
+        print self.crontab
+
+    def __write_crontab(self):
+        if self.crontab == []:
+            subprocess.call(['crontab', '-r'], stderr=PIPE)
+        else:
+            try:
+                subprocess.call(['crontab', self.cronfile], stderr=PIPE)
+            except:
+                print 'Error: could not create crontab'
+                sys.exit(1)
+
     def set(self):
-        pass
+        self.__get_crontab()
+        file = open(self.cronfile, 'w')
+        self.crontab.append('*/' +  self.interval + ' * * * * ' +  self.filename + ' | logger -t m2m-watchdog 2>&1')
+        print self.crontab
+        for line in self.crontab:
+            file.write(line + '\n')
+        file.close()
+        self.__write_crontab()
+
 
     def delete(self):
-        pass
+        self.__get_crontab()
+        self.__write_crontab()
 
 
 def run(service_list, verbose):
@@ -146,13 +182,20 @@ def run(service_list, verbose):
 
 def main():
 
-    service_list = [['M2M Adapter', '/var/run/m2m-adapter.pid', '/etc/init.d/m2m-adapter', None, True]]
+    service_list = [['M2M Gateway', '/home/ptonini/m2m_gateway/m2m_gateway.pid', '/home/ptonini/m2m_gateway/m2mgtw', 2800, True]]
 
     if len(sys.argv) == 1:
         run(service_list, False)
     else:
         if sys.argv[1] == '-v':
             run(service_list, True)
+        elif sys.argv[1] == '-s':
+            cronjob = Cronjob(sys.argv[0], sys.argv[2])
+            cronjob.set()
+        elif sys.argv[1] == '-d':
+            cronjob = Cronjob(sys.argv[0], None)
+            cronjob.delete()
+
 
 
 if __name__ == '__main__':
