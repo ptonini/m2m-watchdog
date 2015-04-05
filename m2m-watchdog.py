@@ -4,7 +4,6 @@ __author__ = 'ptonini'
 import os
 import socket
 import subprocess
-from subprocess import PIPE
 import sys
 import time
 import re
@@ -16,6 +15,7 @@ class Service():
 
     timeout = 3
     thresh = 99
+    devnull = open(os.devnull, 'w')
 
     def __init__(self, name, pidfile, script, port, is_java):
         self.name = name
@@ -81,17 +81,17 @@ class Service():
             old = list()
             for counter in range(self.timeout):
                 try:
-                    output = subprocess.check_output(['/usr/bin/jstat', '-gcutil', str(self.pid)], stderr=PIPE)
-                    r1 = re.compile('\s{2,}')
-                    r2 = re.compile(',')
-                    result = r1.sub(' ', output.split('\n')[1]).split(' ')
-                    eden.append(float(r2.sub('.', result[3])))
-                    old.append(float(r2.sub('.', result[4])))
+                    output = subprocess.check_output(['LANG=C; /usr/bin/jstat -gcutil ' + str(self.pid)],
+                                                     stderr=self.devnull, shell=True)
                 except:
                     print 'Error: could not attach to ' + self.name
                     sys.exit(1)
-                time.sleep(1)
-
+                else:
+                    status_line = output.split('\n')[1].lstrip()
+                    values = re.split('\s{1,}', status_line)
+                    eden.append(float(values[2]))
+                    old.append(float(values[3]))
+                    time.sleep(1)
             self.eden_avg = self.__calc_avg(eden)
             self.old_avg = self.__calc_avg(old)
             self.heap_usage = str(self.eden_avg) + ', ' + str(self.old_avg)
@@ -111,49 +111,51 @@ class Service():
 class Cronjob():
 
     cronfile = '/tmp/cronfile.tmp'
+    crontab = list()
+    devnull = open(os.devnull, 'w')
 
     def __init__(self, filename, interval):
-
         self.filename = filename
         self.interval = interval
 
+
     def __get_crontab(self):
         try:
-            old_crontab = subprocess.check_output(['crontab', '-l'], stderr=PIPE).split('\n')
-            print old_crontab
-            new_crontab = list()
-            for line in old_crontab:
-                if not re.match('^#.*', line) and line != '' and self.filename not in line:
-                    new_crontab.append(line)
-            self.crontab = new_crontab
+            old_crontab = subprocess.check_output(['crontab', '-l'], stderr=self.devnull).split('\n')
         except:
-            self.crontab = list()
-        print self.crontab
+            pass
+        else:
+            for line in old_crontab:
+                if not line.startswith('#') and line != '' and self.filename not in line:
+                    self.crontab.append(line)
+                elif self.filename in line and self.interval == None:
+                    pass
 
     def __write_crontab(self):
+        file = open(self.cronfile, 'w')
+        for line in self.crontab:
+            file.write(line + '\n')
+        file.close()
         if self.crontab == []:
-            subprocess.call(['crontab', '-r'], stderr=PIPE)
+            subprocess.call(['crontab', '-r'], stderr=self.devnull)
         else:
             try:
-                subprocess.call(['crontab', self.cronfile], stderr=PIPE)
+                subprocess.call(['crontab', self.cronfile], stderr=self.devnull)
             except:
-                print 'Error: could not create crontab'
+                print 'Error: could not alter crontab'
                 sys.exit(1)
 
     def set(self):
         self.__get_crontab()
-        file = open(self.cronfile, 'w')
         self.crontab.append('*/' +  self.interval + ' * * * * ' +  self.filename + ' | logger -t m2m-watchdog 2>&1')
-        print self.crontab
-        for line in self.crontab:
-            file.write(line + '\n')
-        file.close()
         self.__write_crontab()
+        print 'The cronjob was set to every ' + str(self.interval) + ' minutes'
 
 
     def delete(self):
         self.__get_crontab()
         self.__write_crontab()
+        print 'The cronjob was removed'
 
 
 def run(service_list, verbose):
@@ -165,20 +167,18 @@ def run(service_list, verbose):
         else:
             if verbose:
                 print 'Service', service.name, 'is running'
-
         if service.is_not_responding():
             print 'Service', service.name, 'is not responding'
             service.daemon('restart')
         else:
             if verbose and service.port is not None:
                 print 'Service', service.name, 'is responding'
-
         if service.is_leaking():
             print 'Service', service.name, 'is leaking memory (' + service.heap_usage + ')'
             service.daemon('restart')
         else:
             if verbose and service.is_java:
-                print 'Service', service.name, 'is not leaking memory (' + service.heap_usage + ')'
+                print 'Service', service.name, 'is not leaking memory'
 
 def main():
 
