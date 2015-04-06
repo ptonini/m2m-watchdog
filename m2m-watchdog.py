@@ -12,7 +12,6 @@ import psutil
 
 
 class Service():
-
     timeout = 3
     thresh = 99
     devnull = open(os.devnull, 'w')
@@ -36,7 +35,7 @@ class Service():
         elif 0 < int(port) < 65536:
             self.port = port
         else:
-            print 'Error: Invalid port for ' + self.name
+            print 'Error: Invalid port for', self.name
             sys.exit(1)
 
     def __check_usage(self, usage):
@@ -46,10 +45,10 @@ class Service():
             return 1
 
     def __calc_avg(self, list):
-        somatory = 0
+        sum = 0
         for item in list:
-            somatory += item
-        return somatory / len(list)
+            sum += item
+        return sum / len(list)
 
     def is_not_running(self):
         if os.path.isfile(self.pidfile):
@@ -77,8 +76,7 @@ class Service():
 
     def is_leaking(self):
         if self.is_java:
-            eden = list()
-            old = list()
+            eden, old = list(), list()
             for counter in range(self.timeout):
                 try:
                     output = subprocess.check_output(['LANG=C; /usr/bin/jstat -gcutil ' + str(self.pid)],
@@ -94,13 +92,11 @@ class Service():
                     time.sleep(1)
             self.eden_avg = self.__calc_avg(eden)
             self.old_avg = self.__calc_avg(old)
-            self.heap_usage = str(self.eden_avg) + ', ' + str(self.old_avg)
-
-            if self.__check_usage(self.eden_avg):
+            self.heap_usage = self.eden_avg, self.old_avg
+            if self.__check_usage(self.eden_avg) and self.__check_usage(self.old_avg):
                 return True
-            if self.__check_usage(self.old_avg):
-                return True
-            return False
+            else:
+                return False
         else:
             return False
 
@@ -109,7 +105,6 @@ class Service():
 
 
 class Cronjob():
-
     cronfile = '/tmp/cronfile.tmp'
     crontab = list()
     is_set = False
@@ -119,9 +114,9 @@ class Cronjob():
     def __init__(self, filename):
         self.filename = filename
 
-    def __get_crontab(self):
+    def __read_crontab(self):
         try:
-            cur_crontab =subprocess.check_output(['crontab', '-l'], stderr=self.devnull).split('\n')
+            cur_crontab = subprocess.check_output(['crontab', '-l'], stderr=self.devnull).split('\n')
         except:
             pass
         else:
@@ -148,19 +143,19 @@ class Cronjob():
 
     def set(self, interval):
         self.interval = interval
-        self.__get_crontab()
-        self.crontab.append('*/' +  self.interval + ' * * * * ' +  self.filename + ' | logger -t m2m-watchdog 2>&1')
+        self.__read_crontab()
+        self.crontab.append('*/' + self.interval + ' * * * * ' + self.filename + ' | logger -t m2m-watchdog 2>&1')
         self.__write_crontab()
-        print 'The cronjob is set to every ' + str(self.interval) + ' minutes'
+        print 'The cronjob is set to every ', self.interval, ' minutes'
 
 
     def delete(self):
-        self.__get_crontab()
+        self.__read_crontab()
         self.__write_crontab()
         print 'The cronjob was removed'
 
     def is_on_crontab(self):
-        self.__get_crontab()
+        self.__read_crontab()
         if self.is_set:
             return True
         else:
@@ -183,15 +178,16 @@ def run(service_list, verbose):
             if verbose and service.port is not None:
                 print 'Service', service.name, 'is responding'
         if service.is_leaking():
-            print 'Service', service.name, 'is leaking memory (' + service.heap_usage + ')'
+            print 'Service', service.name, 'is leaking memory', service.heap_usage
             service.daemon('restart')
         else:
             if verbose and service.is_java:
                 print 'Service', service.name, 'is not leaking memory'
 
-def main():
 
-    service_list = [['M2M Gateway', '/home/ptonini/m2m_gateway/m2m_gateway.pid', '/home/ptonini/m2m_gateway/m2mgtw', 2800, True]]
+def main():
+    service_list = [
+        ['M2M Gateway', '/home/ptonini/m2m_gateway/m2m_gateway.pid', '/home/ptonini/m2m_gateway/m2mgtw', 2800, True]]
 
     if len(sys.argv) == 1:
         run(service_list, False)
@@ -211,9 +207,9 @@ def main():
                         print 'Monitoring service', name
                 else:
                     print 'The cronjob is no set'
-
-
-
+            else:
+                print 'Invalid option'
+                sys.exit(1)
 
 
 if __name__ == '__main__':
