@@ -11,10 +11,14 @@ import re
 import psutil
 
 
-class Service():
+class CommandRunner:
+    devnull = open(os.devnull, 'w')
+
+
+class Service(CommandRunner):
     timeout = 3
     thresh = 99
-    devnull = open(os.devnull, 'w')
+
 
     def __init__(self, name, pidfile, script, port, is_java):
         self.name = name
@@ -104,11 +108,10 @@ class Service():
         subprocess.call([self.script, option])
 
 
-class Cronjob():
+class Cronjob(CommandRunner):
     cronfile = '/tmp/cronfile.tmp'
     crontab = list()
     is_set = False
-    devnull = open(os.devnull, 'w')
     interval = None
 
     def __init__(self, filename):
@@ -147,7 +150,6 @@ class Cronjob():
         self.crontab.append('*/' + self.interval + ' * * * * ' + self.filename + ' | logger -t m2m-watchdog 2>&1')
         self.__write_crontab()
         print 'The cronjob is set to every ', self.interval, ' minutes'
-
 
     def delete(self):
         self.__read_crontab()
@@ -203,8 +205,8 @@ def main():
             elif sys.argv[1] == '-i':
                 if cronjob.is_on_crontab():
                     print 'The cronjob is set to every', cronjob.interval, 'minutes'
-                    for name, pidfile, script, port, is_java in service_list:
-                        print 'Monitoring service', name
+                    for line in service_list:
+                        print 'Monitoring service', line[0]
                 else:
                     print 'The cronjob is no set'
             else:
