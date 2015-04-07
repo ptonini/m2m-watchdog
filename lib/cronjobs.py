@@ -26,6 +26,7 @@ class Cronjob(CommandRunner):
                     self.interval = line.split(' ')[0][2:]
                     self.is_set = True
 
+
     def __write_crontab(self):
         file = open(self.cronfile, 'w')
         for line in self.crontab:
@@ -43,6 +44,7 @@ class Cronjob(CommandRunner):
         os.remove(self.cronfile)
         return True
 
+
     def set(self, interval):
         if self.is_set and interval == self.interval:
             print 'Cronjob already set to every', interval, 'minutes'
@@ -51,6 +53,7 @@ class Cronjob(CommandRunner):
             self.crontab.append('*/' + self.interval + ' * * * * ' + self.filename + ' | logger -t m2m-watchdog 2>&1')
             if self.__write_crontab():
                 print 'The cronjob is set to every', self.interval, 'minutes'
+
 
     def delete(self):
         if self.__write_crontab():

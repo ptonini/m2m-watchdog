@@ -18,6 +18,7 @@ def read_config(filename):
                             config.get(section, 'port'), config.getboolean(section, 'is_java')])
     return service_list
 
+
 def run(service_list, verbose):
     for name, pidfile, script, port, is_java in service_list:
         service = services.Service(name, pidfile, script, port, is_java)
@@ -42,9 +43,7 @@ def run(service_list, verbose):
 
 
 def main():
-
     service_list = read_config('/home/ptonini/m2m_gateway/m2m-watchdog.conf')
-
     if len(sys.argv) == 1:
         run(service_list, False)
     else:
