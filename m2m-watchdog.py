@@ -3,13 +3,24 @@ __author__ = 'ptonini'
 
 import sys
 
-from service import Service
-from cronjob import Cronjob
+import ConfigParser
 
+import lib.services as services
+import lib.cronjobs as cronjobs
+
+
+def read_config(filename):
+    service_list = list()
+    config = ConfigParser.ConfigParser()
+    config.read(filename)
+    for section in config.sections():
+        service_list.append([section, config.get(section, 'pidfile'), config.get(section, 'script'),
+                            config.get(section, 'port'), config.getboolean(section, 'is_java')])
+    return service_list
 
 def run(service_list, verbose):
     for name, pidfile, script, port, is_java in service_list:
-        service = Service(name, pidfile, script, port, is_java)
+        service = services.Service(name, pidfile, script, port, is_java)
         if service.is_not_running():
             print 'Service', service.name, 'is not running'
             service.daemon('start')
@@ -31,8 +42,8 @@ def run(service_list, verbose):
 
 
 def main():
-    service_list = [
-        ['M2M Gateway', '/home/ptonini/m2m_gateway/m2m_gateway.pid', '/home/ptonini/m2m_gateway/m2mgtw', 2800, True]]
+
+    service_list = read_config('/home/ptonini/m2m_gateway/m2m-watchdog.conf')
 
     if len(sys.argv) == 1:
         run(service_list, False)
@@ -40,7 +51,7 @@ def main():
         if sys.argv[1] == '-v':
             run(service_list, True)
         else:
-            cronjob = Cronjob(sys.argv[0])
+            cronjob = cronjobs.Cronjob(sys.argv[0])
             if sys.argv[1] == '-s':
                 cronjob.set(sys.argv[2])
             elif sys.argv[1] == '-d':

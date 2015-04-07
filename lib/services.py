@@ -9,7 +9,7 @@ import re
 
 import psutil
 
-from crunner import CommandRunner
+from lib.crunner import CommandRunner
 
 
 class Service(CommandRunner):
@@ -31,10 +31,10 @@ class Service(CommandRunner):
             print 'Error: Invalid init script for', self.name
 
     def __validate_port(self, port):
-        if port == None:
+        if port == '':
             self.port = None
         elif 0 < int(port) < 65536:
-            self.port = port
+            self.port = int(port)
         else:
             print 'Error: Invalid port for', self.name
             sys.exit(1)
@@ -53,25 +53,27 @@ class Service(CommandRunner):
 
     def is_not_running(self):
         if os.path.isfile(self.pidfile):
-            with open(self.pidfile, "r") as f:
+            with open(self.pidfile, 'r') as f:
                 self.pid = int(f.read())
             try:
                 psutil.pid_exists(self.pid)
-                return False
-            except:
+            except Exception:
                 return True
+            else:
+                return False
         else:
             return True
 
     def is_not_responding(self):
         if self.port != None:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.connect(('localhost', self.port))
+            except Exception:
+                return True
+            else:
                 s.close()
                 return False
-            except:
-                return True
         else:
             return False
 
@@ -80,10 +82,10 @@ class Service(CommandRunner):
             eden, old = list(), list()
             for counter in range(self.timeout):
                 try:
-                    output = subprocess.check_output(['LANG=C; /usr/bin/jstat -gcutil ' + str(self.pid)],
-                                                     stderr=self.devnull, shell=True)
-                except:
-                    print 'Error: could not attach to ' + self.name
+                    output = subprocess.check_output(['/usr/bin/jstat', '-gcutil', str(self.pid)],
+                                                     stderr=self.devnull, env={'LANG':'C'})
+                except Exception:
+                    print 'Error: could not attach to', self.name
                     sys.exit(1)
                 else:
                     status_line = output.split('\n')[1].lstrip()

@@ -1,9 +1,9 @@
 __author__ = 'ptonini'
 
 import subprocess
-import sys
+import os
 
-from crunner import CommandRunner
+from lib.crunner import CommandRunner
 
 
 class Cronjob(CommandRunner):
@@ -14,17 +14,15 @@ class Cronjob(CommandRunner):
 
     def __init__(self, filename):
         self.filename = filename
-
-    def __read_crontab(self):
         try:
             cur_crontab = subprocess.check_output(['crontab', '-l'], stderr=self.devnull).split('\n')
-        except:
+        except Exception:
             pass
         else:
             for line in cur_crontab:
                 if not line.startswith('#') and line != '' and self.filename not in line:
                     self.crontab.append(line)
-                elif self.filename in line and self.interval == None:
+                elif self.filename in line:
                     self.interval = line.split(' ')[0][2:]
                     self.is_set = True
 
@@ -37,22 +35,26 @@ class Cronjob(CommandRunner):
             subprocess.call(['crontab', '-r'], stderr=self.devnull)
         else:
             try:
-                subprocess.call(['crontab', self.cronfile], stderr=self.devnull)
+                subprocess.check_call(['crontab', self.cronfile], stderr=self.devnull)
             except:
+                os.remove(self.cronfile)
                 print 'Error: could not alter crontab'
-                sys.exit(1)
+                return False
+        os.remove(self.cronfile)
+        return True
 
     def set(self, interval):
-        self.interval = interval
-        self.__read_crontab()
-        self.crontab.append('*/' + self.interval + ' * * * * ' + self.filename + ' | logger -t m2m-watchdog 2>&1')
-        self.__write_crontab()
-        print 'The cronjob is set to every ', self.interval, ' minutes'
+        if self.is_set and interval == self.interval:
+            print 'Cronjob already set to every', interval, 'minutes'
+        else:
+            self.interval = interval
+            self.crontab.append('*/' + self.interval + ' * * * * ' + self.filename + ' | logger -t m2m-watchdog 2>&1')
+            if self.__write_crontab():
+                print 'The cronjob is set to every', self.interval, 'minutes'
 
     def delete(self):
-        self.__read_crontab()
-        self.__write_crontab()
-        print 'The cronjob was removed'
+        if self.__write_crontab():
+            print 'The cronjob was removed'
 
     def is_on_crontab(self):
         self.__read_crontab()
