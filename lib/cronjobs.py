@@ -26,7 +26,6 @@ class Cronjob(CommandRunner):
                     self.interval = line.split(' ')[0][2:]
                     self.is_set = True
 
-    @property
     def __write_crontab(self):
         f = open(self.cronfile, 'w')
         for line in self.crontab:
