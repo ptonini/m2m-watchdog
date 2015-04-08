@@ -13,16 +13,14 @@ from lib.crunner import CommandRunner
 
 
 class Service(CommandRunner):
-    timeout = 3
-    thresh = 99
-
-
-    def __init__(self, name, pidfile, script, port, is_java):
+    def __init__(self, name, pidfile, script, port, is_java, sampling, threshold):
         self.name = name
-        self.pidfile = pidfile
         self.__validate_script(script)
         self.__validate_port(port)
+        self.__validate_pid(pidfile)
         self.is_java = is_java
+        self.sampling = sampling
+        self.thresh = threshold
 
     def __validate_script(self, script):
         if os.path.isfile(script):
@@ -39,11 +37,20 @@ class Service(CommandRunner):
             print 'Error: Invalid port for', self.name
             sys.exit(1)
 
+    def __validate_pid(self, pidfile):
+        try:
+            if os.path.isfile(pidfile):
+                with open(pidfile, 'r') as f:
+                    self.pid = int(f.read())
+        except Exception:
+            print 'Error: Invalid pidfile for', self.name
+            sys.exit(1)
+
     def __check_usage(self, usage):
         if usage <= float(self.thresh):
-            return 0
+            return True
         else:
-            return 1
+            return False
 
     def __calc_avg(self, list):
         sum = 0
@@ -52,17 +59,12 @@ class Service(CommandRunner):
         return sum / len(list)
 
     def is_not_running(self):
-        if os.path.isfile(self.pidfile):
-            with open(self.pidfile, 'r') as f:
-                self.pid = int(f.read())
-            try:
-                psutil.pid_exists(self.pid)
-            except Exception:
-                return True
-            else:
-                return False
-        else:
+        try:
+            psutil.pid_exists(self.pid)
+        except Exception:
             return True
+        else:
+            return False
 
     def is_not_responding(self):
         if self.port != None:
@@ -80,10 +82,10 @@ class Service(CommandRunner):
     def is_leaking(self):
         if self.is_java:
             eden, old = list(), list()
-            for counter in range(self.timeout):
+            for counter in range(self.sampling):
                 try:
                     output = subprocess.check_output(['/usr/bin/jstat', '-gcutil', str(self.pid)],
-                                                     stderr=self.devnull, env={'LANG':'C'})
+                                                     stderr=self.devnull, env={'LANG': 'C'})
                 except Exception:
                     print 'Error: could not attach to', self.name
                     sys.exit(1)

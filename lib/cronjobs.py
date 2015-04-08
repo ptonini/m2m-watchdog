@@ -7,13 +7,13 @@ from lib.crunner import CommandRunner
 
 
 class Cronjob(CommandRunner):
-    cronfile = '/tmp/cronfile.tmp'
     crontab = list()
     is_set = False
     interval = None
 
-    def __init__(self, filename):
+    def __init__(self, filename, cronfile):
         self.filename = filename
+        self.cronfile = cronfile
         try:
             cur_crontab = subprocess.check_output(['crontab', '-l'], stderr=self.devnull).split('\n')
         except Exception:
@@ -55,10 +55,3 @@ class Cronjob(CommandRunner):
     def delete(self):
         if self.__write_crontab:
             print 'The cronjob was removed'
-
-    def is_on_crontab(self):
-        self.__read_crontab()
-        if self.is_set:
-            return True
-        else:
-            return False

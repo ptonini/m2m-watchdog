@@ -6,11 +6,11 @@ import sys
 
 import lib.cronjobs as cronjobs
 import lib.services as services
-import lib.func as func
+from lib.func import read_config
 
-def run(service_list, verbose):
+def run(service_list, verbose, sampling, threshold):
     for name, pidfile, script, port, is_java in service_list:
-        service = services.Service(name, pidfile, script, port, is_java)
+        service = services.Service(name, pidfile, script, port, is_java, sampling, threshold)
         if service.is_not_running():
             print 'Service', service.name, 'is not running'
             service.daemon('start')
@@ -33,14 +33,14 @@ def run(service_list, verbose):
 
 
 def main():
-    service_list = func.read_config('/home/ptonini/m2m_gateway/m2m-watchdog.conf')
+    global_vars, service_list = read_config('/home/ptonini/m2m_gateway/m2m-watchdog.conf')
     if len(sys.argv) == 1:
-        run(service_list, False)
+        run(service_list, False, global_vars[1], global_vars[2])
     else:
         if sys.argv[1] == '-v':
-            run(service_list, True)
+            run(service_list, True, global_vars[1], global_vars[2])
         else:
-            cronjob = cronjobs.Cronjob(sys.argv[0])
+            cronjob = cronjobs.Cronjob(sys.argv[0], global_vars[0])
             if sys.argv[1] == '-s':
                 cronjob.set(sys.argv[2])
             elif sys.argv[1] == '-d':
