@@ -32,7 +32,7 @@ def run(service_list, verbose, sampling, threshold):
 
 
 def main():
-    global_vars, service_list = read_config('/home/ptonini/m2m_gateway/m2m-watchdog.conf')
+    global_vars, service_list = read_config('/etc/m2m-watchdog.conf')
     if len(sys.argv) == 1:
         run(service_list, False, global_vars[1], global_vars[2])
     else:
