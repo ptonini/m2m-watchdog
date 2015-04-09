@@ -3,10 +3,10 @@ __author__ = 'ptonini'
 
 import sys
 
-
 import lib.cronjobs as cronjobs
 import lib.services as services
 from lib.func import read_config
+
 
 def run(service_list, verbose, sampling, threshold):
     for name, pidfile, script, port, is_java in service_list:
@@ -29,7 +29,6 @@ def run(service_list, verbose, sampling, threshold):
         else:
             if verbose and service.is_java:
                 print 'Service', service.name, 'is not leaking memory'
-
 
 
 def main():

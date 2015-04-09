@@ -48,9 +48,9 @@ class Service(CommandRunner):
 
     def __check_usage(self, usage):
         if usage <= float(self.thresh):
-            return True
-        else:
             return False
+        else:
+            return True
 
     def __calc_avg(self, list):
         sum = 0
