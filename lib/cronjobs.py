@@ -53,5 +53,7 @@ class Cronjob(CommandRunner):
                 print 'The cronjob is set to every', self.interval, 'minutes'
 
     def delete(self):
-        if self.__write_crontab:
+        if self.is_set and self.__write_crontab():
             print 'The cronjob was removed'
+        elif not self.is_set:
+            print 'The cronjob is not set'

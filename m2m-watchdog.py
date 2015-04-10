@@ -5,7 +5,7 @@ import sys
 
 import lib.cronjobs as cronjobs
 import lib.services as services
-from lib.func import read_config
+from lib.func import from_file
 
 
 def run(service_list, verbose, sampling, threshold):
@@ -32,7 +32,7 @@ def run(service_list, verbose, sampling, threshold):
 
 
 def main():
-    global_vars, service_list = read_config('/etc/m2m-watchdog.conf')
+    global_vars, service_list = from_file('/home/ptonini/m2m_gateway/m2m-watchdog.conf')
     if len(sys.argv) == 1:
         run(service_list, False, global_vars[1], global_vars[2])
     else:
