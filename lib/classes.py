@@ -94,7 +94,8 @@ class Service(CommandRunner):
                                                      stderr=self.devnull, env={'LANG': 'C'})
                 except Exception:
                     print 'Error: could not attach to', self.name
-                    sys.exit(1)
+                    self.need_restart = True
+                    return True
                 else:
                     status_line = output.split('\n')[1].lstrip()
                     values = re.split('\s{1,}', status_line)
