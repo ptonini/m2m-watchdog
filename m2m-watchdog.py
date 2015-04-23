@@ -31,7 +31,7 @@ def run(service_list, verbose, sampling, threshold):
 
 
 def main():
-    global_vars, service_list = from_file('/home/ptonini/m2m_gateway/m2m-watchdog.conf')
+    global_vars, service_list = from_file('/etc/m2m-watchdog.conf')
     if len(sys.argv) == 1:
         run(service_list, False, global_vars[1], global_vars[2])
     else:
@@ -49,7 +49,7 @@ def main():
                     for line in service_list:
                         print 'Monitoring service', line[0]
                 else:
-                    print 'The cronjob is no set'
+                    print 'The cronjob is not set'
             else:
                 print 'Invalid option'
                 sys.exit(1)
