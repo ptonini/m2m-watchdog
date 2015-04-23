@@ -15,6 +15,8 @@ class CommandRunner:
 
 
 class Service(CommandRunner):
+    need_restart = False
+
     def __init__(self, name, pidfile, script, port, is_java, sampling, threshold):
         self.name = name
         self.__validate_script(script)
@@ -64,6 +66,7 @@ class Service(CommandRunner):
         try:
             psutil.pid_exists(self.pid)
         except Exception:
+            self.need_restart = True
             return True
         else:
             return False
@@ -74,6 +77,7 @@ class Service(CommandRunner):
             try:
                 s.connect(('localhost', self.port))
             except Exception:
+                self.need_restart = True
                 return True
             else:
                 s.close()
@@ -101,6 +105,7 @@ class Service(CommandRunner):
             self.old_avg = self.__calc_avg(old)
             self.heap_usage = self.eden_avg, self.old_avg
             if self.__check_usage(self.eden_avg) and self.__check_usage(self.old_avg):
+                self.need_restart = True
                 return True
             else:
                 return False

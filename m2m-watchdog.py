@@ -12,22 +12,22 @@ def run(service_list, verbose, sampling, threshold):
         service = classes.Service(name, pidfile, script, port, is_java, sampling, threshold)
         if service.is_not_running():
             print 'Service', service.name, 'is not running'
-            service.daemon('start')
         else:
             if verbose:
                 print 'Service', service.name, 'is running'
         if service.is_not_responding():
             print 'Service', service.name, 'is not responding'
-            service.daemon('restart')
         else:
             if verbose and service.port is not None:
                 print 'Service', service.name, 'is responding'
         if service.is_leaking():
             print 'Service', service.name, 'is leaking memory', service.heap_usage
-            service.daemon('restart')
+
         else:
             if verbose and service.is_java:
                 print 'Service', service.name, 'is not leaking memory'
+        if service.need_restart:
+            service.daemon('restart')
 
 
 def main():
