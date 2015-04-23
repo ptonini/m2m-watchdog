@@ -15,12 +15,12 @@ def run(service_list, verbose, sampling, threshold):
         else:
             if verbose:
                 print 'Service', service.name, 'is running'
-        if service.is_not_responding():
+        if  service.need_restart == False and service.is_not_responding():
             print 'Service', service.name, 'is not responding'
         else:
             if verbose and service.port is not None:
                 print 'Service', service.name, 'is responding'
-        if service.is_leaking():
+        if service.need_restart == False and service.is_leaking():
             print 'Service', service.name, 'is leaking memory', service.heap_usage
 
         else:
