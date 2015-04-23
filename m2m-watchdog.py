@@ -21,7 +21,7 @@ def run(service_list, verbose, sampling, threshold):
             if verbose and service.port is not None and service.need_restart == False:
                 print 'Service', service.name, 'is responding'
         if service.need_restart == False and service.is_leaking():
-            print 'Service', service.name, 'is leaking memory', service.heap_usage
+            print 'Service', service.name, 'is leaking memory'
 
         else:
             if verbose and service.is_java and service.need_restart == False:
