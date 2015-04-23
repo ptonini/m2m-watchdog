@@ -3,14 +3,13 @@ __author__ = 'ptonini'
 
 import sys
 
-import lib.cronjobs as cronjobs
-import lib.services as services
+import lib.classes as classes
 from lib.func import from_file
 
 
 def run(service_list, verbose, sampling, threshold):
     for name, pidfile, script, port, is_java in service_list:
-        service = services.Service(name, pidfile, script, port, is_java, sampling, threshold)
+        service = classes.Service(name, pidfile, script, port, is_java, sampling, threshold)
         if service.is_not_running():
             print 'Service', service.name, 'is not running'
             service.daemon('start')
@@ -39,7 +38,7 @@ def main():
         if sys.argv[1] == '-v':
             run(service_list, True, global_vars[1], global_vars[2])
         else:
-            cronjob = cronjobs.Cronjob(sys.argv[0], global_vars[0])
+            cronjob = classes.Cronjob(sys.argv[0], global_vars[0])
             if sys.argv[1] == '-s':
                 cronjob.set(sys.argv[2])
             elif sys.argv[1] == '-d':
