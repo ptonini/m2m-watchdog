@@ -9,7 +9,9 @@ import re
 
 import psutil
 
-from lib.crunner import CommandRunner
+
+class CommandRunner:
+    devnull = open(os.devnull, 'w')
 
 
 class Service(CommandRunner):
