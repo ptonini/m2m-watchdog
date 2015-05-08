@@ -4,7 +4,7 @@ __author__ = 'ptonini'
 import sys
 
 import lib.classes as classes
-from lib.func import from_file
+import lib.func as func
 
 
 def run(service_list, verbose, sampling, threshold):
@@ -31,7 +31,7 @@ def run(service_list, verbose, sampling, threshold):
 
 
 def main():
-    global_vars, service_list = from_file('/etc/m2m-watchdog.conf')
+    global_vars, service_list = func.get_config_from_file('/etc/m2m-watchdog.conf')
     if len(sys.argv) == 1:
         run(service_list, False, global_vars[1], global_vars[2])
     else:
