@@ -10,11 +10,8 @@ from lib.func import from_file
 def run(service_list, verbose, sampling, threshold):
     for name, pidfile, script, port, is_java in service_list:
         service = classes.Service(name, pidfile, script, port, is_java, sampling, threshold)
-        if service.is_not_running():
-            print 'Service', service.name, 'is not running'
-        else:
-            if verbose:
-                print 'Service', service.name, 'is running'
+        if service.is_running() and verbose:
+            print 'Service', service.name, 'is running'
         if  service.need_restart == False and service.is_not_responding():
             print 'Service', service.name, 'is not responding'
         else:
@@ -31,14 +28,14 @@ def run(service_list, verbose, sampling, threshold):
 
 
 def main():
-    global_vars, service_list = from_file('/etc/m2m-watchdog.conf')
+    cronfile, sampling, threshold, service_list = from_file('./m2m-watchdog.conf')
     if len(sys.argv) == 1:
-        run(service_list, False, global_vars[1], global_vars[2])
+        run(service_list, False, sampling, threshold)
     else:
         if sys.argv[1] == '-v':
-            run(service_list, True, global_vars[1], global_vars[2])
+            run(service_list, True, sampling, threshold)
         else:
-            cronjob = classes.Cronjob(sys.argv[0], global_vars[0])
+            cronjob = classes.Cronjob(sys.argv[0], cronfile)
             if sys.argv[1] == '-s':
                 cronjob.set(sys.argv[2])
             elif sys.argv[1] == '-d':
