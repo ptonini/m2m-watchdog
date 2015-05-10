@@ -63,6 +63,7 @@ class Service(CommandRunner):
         return sum / len(list)
 
     def is_not_running(self):
+        print 'pid is', self.pid
         try:
             psutil.pid_exists(self.pid)
         except Exception:
