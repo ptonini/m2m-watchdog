@@ -2,9 +2,10 @@
 __author__ = 'ptonini'
 
 import sys
+import os
 
 import lib.classes as classes
-from lib.func import from_file
+import lib.func as func
 
 
 def run(service_list, verbose, sampling, threshold):
@@ -19,7 +20,6 @@ def run(service_list, verbose, sampling, threshold):
                 print 'Service', service.name, 'is responding'
         if service.need_restart == False and service.is_leaking():
             print 'Service', service.name, 'is leaking memory'
-
         else:
             if verbose and service.is_java and service.need_restart == False:
                 print 'Service', service.name, 'is not leaking memory'
@@ -28,7 +28,7 @@ def run(service_list, verbose, sampling, threshold):
 
 
 def main():
-    cronfile, sampling, threshold, service_list = from_file('./m2m-watchdog.conf')
+    cronfile, sampling, threshold, service_list = func.get_config_from_file('/etc/m2m-watchdog.conf')
     if len(sys.argv) == 1:
         run(service_list, False, sampling, threshold)
     else:
@@ -53,4 +53,6 @@ def main():
 
 
 if __name__ == '__main__':
+    if os.geteuid() != 0:
+        exit('You need to have root privileges to run this script.')
     main()

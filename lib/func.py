@@ -3,7 +3,7 @@ __author__ = 'ptonini'
 
 import ConfigParser as configparser
 
-def from_file(filename):
+def get_config_from_file(filename):
     service_list = list()
     config = configparser.ConfigParser()
     config.read(filename)
