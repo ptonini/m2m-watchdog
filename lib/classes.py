@@ -19,20 +19,11 @@ class Service(CommandRunner):
 
     def __init__(self, name, pidfile, script, port, is_java, sampling, threshold):
         self.name = name
-        self.__validate_script(script)
-        self.__validate_port(port)
-        self.__validate_pid(pidfile)
-        self.is_java = is_java
-        self.sampling = sampling
-        self.thresh = threshold
-
-    def __validate_script(self, script):
         if os.path.isfile(script):
             self.script = script
         else:
             print 'Error: Invalid init script for', self.name
-
-    def __validate_port(self, port):
+            sys.exit(1)
         if port == '':
             self.port = None
         elif 0 < int(port) < 65536:
@@ -41,14 +32,19 @@ class Service(CommandRunner):
             print 'Error: Invalid port for', self.name
             sys.exit(1)
 
-    def __validate_pid(self, pidfile):
-        try:
-            if os.path.isfile(pidfile):
-                with open(pidfile, 'r') as f:
+        if os.path.isfile(pidfile):
+            with open(pidfile, 'r') as f:
+                try:
                     self.pid = int(f.read())
-        except Exception:
-            print 'Error: Invalid pidfile for', self.name
-            sys.exit(1)
+                except:
+                    print 'Invalid PID from', pidfile
+                    sys.exit(1)
+        else:
+            self.pid = 0
+        self.is_java = is_java
+        self.sampling = sampling
+        self.thresh = threshold
+
 
     def __check_usage(self, usage):
         if usage <= float(self.thresh):
@@ -62,13 +58,11 @@ class Service(CommandRunner):
             sum += item
         return sum / len(list)
 
-    def is_not_running(self):
-        try:
-            psutil.pid_exists(self.pid)
-        except Exception:
-            self.need_restart = True
+    def is_running(self):
+        if psutil.pid_exists(self.pid):
             return True
         else:
+            self.need_restart = True
             return False
 
     def is_not_responding(self):
