@@ -24,11 +24,12 @@ def run(service_list, verbose, sampling, threshold):
             if verbose and service.is_java and service.need_restart == False:
                 print 'Service', service.name, 'is not leaking memory'
         if service.need_restart:
+            print 'Restarting service ' + service.name + '...',
             service.daemon('restart')
 
 
 def main():
-    cronfile, sampling, threshold, service_list = func.get_config_from_file('/etc/m2m-watchdog.conf')
+    cronfile, sampling, threshold, service_list = func.get_config_from_file('./m2m-watchdog.conf')
     if len(sys.argv) == 1:
         run(service_list, False, sampling, threshold)
     else:
@@ -54,5 +55,6 @@ def main():
 
 if __name__ == '__main__':
     if os.geteuid() != 0:
-        exit('You need to have root privileges to run this script.')
+        print 'You need to have root privileges to run this script.'
+        sys.exit(1)
     main()
