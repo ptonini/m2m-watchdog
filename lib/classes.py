@@ -105,7 +105,7 @@ class Service(CommandRunner):
 
     def daemon(self, option):
         try:
-            subprocess.check_output(['service', self.script, option], stderr=self.devnull)
+            subprocess.check_output(['/usr/sbin/service', self.script, option], stderr=self.devnull)
         except:
             print '  Failed!'
         else:

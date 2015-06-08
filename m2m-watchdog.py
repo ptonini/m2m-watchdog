@@ -29,7 +29,7 @@ def run(service_list, verbose, sampling, threshold):
 
 
 def main():
-    cronfile, sampling, threshold, service_list = func.get_config_from_file('./m2m-watchdog.conf')
+    cronfile, sampling, threshold, service_list = func.get_config_from_file('/etc/m2m-watchdog.conf')
     if len(sys.argv) == 1:
         run(service_list, False, sampling, threshold)
     else:
