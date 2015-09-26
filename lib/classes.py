@@ -19,11 +19,7 @@ class Service(CommandRunner):
 
     def __init__(self, name, pidfile, script, port, is_java, sampling, threshold):
         self.name = name
-        if os.path.isfile(script):
-            self.script = script
-        else:
-            print 'Error: Invalid init script for', self.name
-            sys.exit(1)
+        self.script = script
         if port == '':
             self.port = None
         elif 0 < int(port) < 65536:
@@ -108,7 +104,12 @@ class Service(CommandRunner):
             return False
 
     def daemon(self, option):
-        subprocess.call([self.script, option])
+        try:
+            subprocess.check_output(['/usr/sbin/service', self.script, option], stderr=self.devnull)
+        except:
+            print '  Failed!'
+        else:
+            print '  Done'
 
 class Cronjob(CommandRunner):
     crontab = list()
