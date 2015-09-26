@@ -36,7 +36,7 @@ class Service(CommandRunner):
                     print 'Invalid PID from', pidfile
                     sys.exit(1)
         else:
-            self.pid = 0
+            self.pid = ''
         self.is_java = is_java
         self.sampling = sampling
         self.thresh = threshold

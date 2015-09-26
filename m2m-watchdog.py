@@ -11,7 +11,7 @@ import lib.func as func
 def run(service_list, verbose, sampling, threshold):
     for name, pidfile, script, port, is_java in service_list:
         service = classes.Service(name, pidfile, script, port, is_java, sampling, threshold)
-        if service.is_running() and verbose:
+        if service.pid != '' and service.is_running() and verbose:
             print 'Service', service.name, 'is running'
         if  service.need_restart == False and service.is_not_responding():
             print 'Service', service.name, 'is not responding'
